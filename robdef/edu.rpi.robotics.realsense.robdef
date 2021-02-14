@@ -1,0 +1,24 @@
+service edu.rpi.robotics.realsense
+
+
+
+stdver 0.10
+import com.robotraconteur.image
+
+
+
+using com.robotraconteur.image.Image
+using com.robotraconteur.image.DepthImage
+
+
+
+object Realsense
+
+	function void StartStreaming()
+    function void StopStreaming()
+
+	pipe DepthImage depth_image_stream [readonly]	
+	pipe Image image_stream [readonly]
+
+	
+end 
