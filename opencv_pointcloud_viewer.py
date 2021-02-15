@@ -72,6 +72,9 @@ config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
 # Start streaming
 pipeline.start(config)
 
+align_to = rs.stream.color
+align = rs.align(align_to)
+
 # Get stream profile and camera intrinsics
 profile = pipeline.get_active_profile()
 depth_profile = rs.video_stream_profile(profile.get_stream(rs.stream.depth))
@@ -265,13 +268,25 @@ out = np.empty((h, w, 3), dtype=np.uint8)
 while True:
     # Grab camera data
     if not state.paused:
-        # Wait for a coherent pair of frames: depth and color
+         # Get frameset of color and depth
         frames = pipeline.wait_for_frames()
+        # frames.get_depth_frame() is a 640x360 depth image
 
-        depth_frame = frames.get_depth_frame()
-        color_frame = frames.get_color_frame()
 
-        depth_frame = decimate.process(depth_frame)
+        # Align the depth frame to color frame
+        aligned_frames = align.process(frames)
+
+        # Get aligned frames
+        aligned_depth_frame = aligned_frames.get_depth_frame() # aligned_depth_frame is a 640x480 depth image
+        color_frame = aligned_frames.get_color_frame()
+
+        # # Wait for a coherent pair of frames: depth and color
+        # frames = pipeline.wait_for_frames()
+
+        # depth_frame = frames.get_depth_frame()
+        # color_frame = frames.get_color_frame()
+
+        depth_frame = decimate.process(aligned_depth_frame)
 
         # Grab new intrinsics (may be changed by decimation)
         depth_intrinsics = rs.video_stream_profile(
@@ -291,14 +306,13 @@ while True:
 
         points = pc.calculate(depth_frame)
         pc.map_to(mapped_frame)
-        coordinates = np.ndarray(buffer=points.get_vertices(), dtype=np.float32, shape=(480, 640, 3))
-
 
         # Pointcloud data to arrays
         v, t = points.get_vertices(), points.get_texture_coordinates()
         verts = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
         texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  # uv
 
+        print(texcoords[100])
     # Render
     now = time.time()
 

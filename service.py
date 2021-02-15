@@ -7,8 +7,6 @@ import pyrealsense2 as rs
 from RobotRaconteurCompanion.Util.SensorDataUtil import SensorDataUtil
 
 
-
-
 class RSImpl(object):
 	#Issue: Officially we currently only support 640x480/1024x768 for Depth and 1920x1080/1280x720 for Color.
 	def __init__(self, width=640, height=480, fps=30, camera_info=None):
@@ -35,6 +33,11 @@ class RSImpl(object):
 		align_to = rs.stream.color
 		self.align = rs.align(align_to)
 
+		# Point cloud
+		self.pc = rs.pointcloud()
+		self.decimate = rs.decimation_filter()
+		self.decimate.set_option(rs.option.filter_magnitude, 2 ** 1)
+
 
 		# self._imaging_consts = RRN.GetConstants('com.robotraconteur.imaging')
 		self._image_consts = RRN.GetConstants('com.robotraconteur.image')
@@ -45,10 +48,12 @@ class RSImpl(object):
 		# self._date_time_utc_type = RRN.GetPodDType('com.robotraconteur.datetime.DateTimeUTC')
 		# self._isoch_info = RRN.GetStructureType('com.robotraconteur.device.isoch.IsochInfo')
 		self._capture_lock = threading.Lock()
+		self._point_type = RRN.GetNamedArrayDType("com.robotraconteur.geometry.Point")
+		self._pointcloud_type = RRN.GetStructureType('com.robotraconteur.pointcloud.PointCloud')
+		self._rs_pointcloud_type = RRN.GetStructureType('edu.rpi.robotics.realsense.rs_pointcloud')
+
 		self._streaming = False
-		# self._fps = self._capture.get(cv2.CAP_PROP_FPS)
-		# self._camera_info = camera_info
-		# self._date_time_util = DateTimeUtil(RRN)
+
 		self._sensor_data_util = SensorDataUtil(RRN)
 	def _cv_mat_to_image(self, mat):
 
@@ -74,7 +79,25 @@ class RSImpl(object):
 	def _mat_to_depthimage(self, mat):
 		image = self._depth_image_type()
 		image.depth_image=self._cv_mat_to_image(mat)
+		image.depth_ticks_per_meter=1./self.depth_scale
 		return image
+
+	def _pc_to_RRpc(self,verts,texcoords,w,h):
+		rs_pointcloud=self._rs_pointcloud_type()
+		RRpc=self._pointcloud_type()
+		RRpc.width=w
+		RRpc.height=h
+		RRpc.points=np.zeros((len(verts)),dtype=self._point_type)
+
+		for i in range(len(verts)):
+			RRpc.points[i]['x']=verts[i][0]
+			RRpc.points[i]['y']=verts[i][1]
+			RRpc.points[i]['z']=verts[i][2]
+		rs_pointcloud.pointcloud=RRpc
+		rs_pointcloud.texcoords=texcoords.flatten()
+		return rs_pointcloud
+
+
 
 	def frame_threadfunc(self):
 		while(self._streaming):
@@ -101,12 +124,26 @@ class RSImpl(object):
 
 				self.depth_image_stream.SendPacket(self._mat_to_depthimage(depth_image))
 				self.image_stream.SendPacket(self._cv_mat_to_image(color_image))
-			
-			# self.frame_stream.AsyncSendPacket(self._cv_mat_to_image(mat),lambda: None)
-			# self.frame_stream_compressed.AsyncSendPacket(self._cv_mat_to_compressed_image(mat),lambda: None)
-			# self.preview_stream.AsyncSendPacket(self._cv_mat_to_compressed_image(mat,70),lambda: None)
-			# device_now = self._date_time_util.FillDeviceTime(self._camera_info.device_info,self._seqno)
-			# self.device_clock_now.OutValue = device_now
+
+				###pointcloud part
+				depth_frame = self.decimate.process(aligned_depth_frame)
+
+				# Grab new intrinsics (may be changed by decimation)
+				depth_intrinsics = rs.video_stream_profile(
+					depth_frame.profile).get_intrinsics()
+				w, h = depth_intrinsics.width, depth_intrinsics.height
+
+				points = self.pc.calculate(depth_frame)
+				self.pc.map_to(color_frame)
+
+				# Pointcloud data to arrays
+				v, t = points.get_vertices(), points.get_texture_coordinates()
+				verts = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
+				# print(verts)
+				texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  # uv
+
+				self.pc_stream.SendPacket(self._pc_to_RRpc(verts,texcoords,w,h))
+
 
 	def StartStreaming(self):
 		if (self._streaming):

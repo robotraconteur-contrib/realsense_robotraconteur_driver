@@ -4,12 +4,18 @@ service edu.rpi.robotics.realsense
 
 stdver 0.10
 import com.robotraconteur.image
+import com.robotraconteur.pointcloud
+import com.robotraconteur.geometry
 
-
-
+using com.robotraconteur.geometry.Point
 using com.robotraconteur.image.Image
 using com.robotraconteur.image.DepthImage
+using com.robotraconteur.pointcloud.PointCloud
 
+struct rs_pointcloud
+	field PointCloud pointcloud
+	field single[] texcoords
+end
 
 
 object Realsense
@@ -19,6 +25,7 @@ object Realsense
 
 	pipe DepthImage depth_image_stream [readonly]	
 	pipe Image image_stream [readonly]
-
+	pipe rs_pointcloud pc_stream [readonly]
+	
 	
 end 

@@ -202,6 +202,7 @@ try:
         frames = pipeline.wait_for_frames()
         # frames.get_depth_frame() is a 640x360 depth image
 
+
         # Align the depth frame to color frame
         aligned_frames = align.process(frames)
 
@@ -223,9 +224,15 @@ try:
         
         depth_data= np.asarray(aligned_depth_frame.as_frame().get_data())
 
+        depth_frame = frames.get_depth_frame()
+        # Grab new intrinsics (may be changed by decimation)
+        depth_intrinsics = rs.video_stream_profile(
+            depth_frame.profile).get_intrinsics()
+        w, h = depth_intrinsics.width, depth_intrinsics.height
+        
         #pointcloud
-        points = pc.calculate(aligned_depth_frame)
-        pc.map_to(color_frame)
+        points = pc.calculate(depth_frame)
+        # pc.map_to(color_frame)
 
         # Pointcloud data to arrays
         v, t = points.get_vertices(), points.get_texture_coordinates()
