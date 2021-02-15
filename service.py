@@ -117,12 +117,13 @@ class RSImpl(object):
 				if not aligned_depth_frame or not color_frame:
 					continue
 
-				depth_image = np.asanyarray(aligned_depth_frame.get_data(),dtype=np.uint8)
+				depth_image = np.asanyarray(aligned_depth_frame.get_data())
+				depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
 				color_image = np.asanyarray(color_frame.get_data(),dtype=np.uint8)
 				#depth data matching with image
 				depth_data= np.asarray(aligned_depth_frame.as_frame().get_data())
 
-				self.depth_image_stream.SendPacket(self._mat_to_depthimage(depth_image))
+				self.depth_image_stream.SendPacket(self._mat_to_depthimage(depth_colormap))
 				self.image_stream.SendPacket(self._cv_mat_to_image(color_image))
 
 				###pointcloud part

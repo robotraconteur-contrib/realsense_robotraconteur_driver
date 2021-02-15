@@ -7,43 +7,37 @@ from RobotRaconteur.Client import *
 
 import time, math
 import numpy as np
-import cv2
 import sys, traceback
 import matplotlib.pyplot as plt
+import mpl_toolkits.mplot3d.axes3d as p3
+import matplotlib.animation as animation
 
-
-#Function to take the data structure returned from the Webcam service
-#and convert it to an OpenCV array
-def ImageToMat(image):
-
-	frame2=image.data.reshape([image.image_info.height, image.image_info.width, int(len(image.data)/(image.image_info.height*image.image_info.width))], order='C')
-	return frame2
 
 
 def deform_pc(RR_pc):
 	return RR_pc.points.view((float, len(RR_pc.points.dtype.names)))
 
-current_frame=None
-image_type='depth'
+pointcloud=None
+graph=None
+title=None
 #This function is called when a new pipe packet arrives
 def new_frame(pipe_ep):
-	global current_frame, image_type
+	global pointcloud
 
 	#Loop to get the newest frame
 	while (pipe_ep.Available > 0):
 		#Receive the packet
 		
-		image=pipe_ep.ReceivePacket()
-		#Convert the packet to an image and set the global variable
-		if image_type=='color':
-			current_frame=ImageToMat(image)
-		else:
-			current_frame=ImageToMat(image.depth_image)
+		pc_stream=pipe_ep.ReceivePacket()
 
+		try:
+			pointcloud=deform_pc(pc_stream.pointcloud)
+		except:
+			traceback.print_exc()
 		return
 
 def main():
-
+	global pointcloud, graph, title
 	url='rr+tcp://localhost:25415?service=RS_Service'
 	if (len(sys.argv)>=2):
 		url=sys.argv[1]
@@ -52,8 +46,7 @@ def main():
 	rs_obj=RRN.ConnectService(url)
 
 	#Connect the pipe FrameStream to get the PipeEndpoint p
-	p=rs_obj.depth_image_stream.Connect(-1)
-	# p=rs_obj.depth_image_stream.Connect(-1)
+	p=rs_obj.pc_stream.Connect(-1)
 
 	#Set the callback for when a new pipe packet is received to the
 	#new_frame function
@@ -64,17 +57,13 @@ def main():
 		rs_obj.StartStreaming()
 	except: pass
 
-	cv2.namedWindow("Image")
-
-	while True:
-		#Just loop resetting the frame
-		#This is not ideal but good enough for demonstration
-
-		if (not current_frame is None):
-			cv2.imshow("Image",current_frame)
-		if cv2.waitKey(50)!=-1:
-			break
-	cv2.destroyAllWindows()
+	
+	fig = plt.figure()
+	ax = p3.Axes3D(fig)
+	title = ax.set_title('3D Test')
+	time.sleep(2)
+	graph = ax.scatter(pointcloud[:,0], pointcloud[:,1], pointcloud[:,2])
+	plt.show()
 
 	p.Close()
 	rs_obj.StopStreaming()
