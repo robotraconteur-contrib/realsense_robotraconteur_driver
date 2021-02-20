@@ -5,10 +5,8 @@
 
 from RobotRaconteur.Client import *
 
-import time, math
+import cv2, sys, traceback, argparse
 import numpy as np
-import cv2
-import sys, traceback
 import matplotlib.pyplot as plt
 
 
@@ -39,16 +37,20 @@ def new_frame(pipe_ep):
 		return
 
 def main():
+	#Accept the names of the webcams and the nodename from command line
+	parser = argparse.ArgumentParser(description="RR plug and play client")
+	parser.add_argument("--type",type=str,help="type of image")
+	args, _ = parser.parse_known_args()
+
+	cam_dict={'rgb':0,'depth':1}
 
 	url='rr+tcp://localhost:25415?service=Multi_Cam_Service'
-	if (len(sys.argv)>=2):
-		url=sys.argv[1]
 
 	#Startup, connect, and pull out the camera from the objref    
 	Multi_Cam_obj=RRN.ConnectService(url)
 
 	#Connect the pipe FrameStream to get the PipeEndpoint p
-	cam=Multi_Cam_obj.get_cameras(1)
+	cam=Multi_Cam_obj.get_cameras(cam_dict[args.type])
 	p=cam.frame_stream.Connect(-1)
 
 	#Set the callback for when a new pipe packet is received to the
