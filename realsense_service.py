@@ -2,9 +2,12 @@ import RobotRaconteur as RR
 RRN=RR.RobotRaconteurNode.s
 import RobotRaconteurCompanion as RRC
 import numpy as np
-import traceback, os, cv2, time, threading
+import traceback, os, cv2, time, threading, argparse
 import pyrealsense2 as rs
+from RobotRaconteurCompanion.Util.InfoFileLoader import InfoFileLoader
+from RobotRaconteurCompanion.Util.DateTimeUtil import DateTimeUtil
 from RobotRaconteurCompanion.Util.SensorDataUtil import SensorDataUtil
+from RobotRaconteurCompanion.Util.AttributesUtil import AttributesUtil
 
 
 class RGB_Cam(object):
@@ -208,13 +211,24 @@ class RSImpl(object):
 
 def main():
 	with RR.ServerNodeSetup("RS_Node", 25415) as node_setup:
-		#RR setup
+		parser = argparse.ArgumentParser(description="Realsense Driver for Robot Raconteur")
+		parser.add_argument("--realsense-info-file", type=argparse.FileType('r'),default="realsense.yaml",help="Realsense info file (required)")
+		args, _ = parser.parse_known_args()
+
+		#Register Service types
 		RRC. RegisterStdRobDefServiceTypes(RRN)
-		#register service file and service
-		RRN.RegisterServiceTypeFromFile("robdef/edu.rpi.robotics.realsense.robdef")
-
-
+		#create object
 		RS_obj=RSImpl()
+
+		with args.realsense_info_file:
+			realsense_info_text = args.realsense_info_file.read()
+		info_loader = InfoFileLoader(RRN)
+		# realsense_info, camera_ident_fd = info_loader.LoadInfoFileFromString(tool_info_text, "com.robotraconteur.robotics.tool.ToolInfo", "tool")
+		# attributes_util = AttributesUtil(RRN)
+		# tool_attributes = attributes_util.GetDefaultServiceAttributesFromDeviceInfo(tool_info.device_info)
+		# gripper_inst=create_gripper(tool_info)
+		# service_ctx = RRN.RegisterService("tool","com.robotraconteur.robotics.tool.Tool",gripper_inst)
+		# service_ctx.SetServiceAttributes(tool_attributes)
 
 		RS_obj.start_streaming()
 
