@@ -12,8 +12,8 @@
 
 ## RR Client Example
 * RGB Image View
-`python realsense_client_image.py --camid=0`
+`python realsense_client_image.py --type=rgb`
 * Depth Image View
-`python realsense_client_image.py --camid=1`
+`python realsense_client_image.py --type=depth`
 * Pointcloud View
 `python realsense_client_pointcloud.py`
