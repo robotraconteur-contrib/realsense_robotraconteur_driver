@@ -3,7 +3,7 @@
 ## Prerequisites:
 * [Robot Raconteur](https://github.com/robotraconteur/robotraconteur/wiki/Download)
 * python3.7 (for RR service only)
-* pyrealsense2 (`python3.7 -m pip install pyrealsense2')
+* pyrealsense2 (`python3.7 -m pip install pyrealsense2`)
 
 
 ## Start RR Service
