@@ -27,5 +27,4 @@ object Realsense
 	pipe Image image_stream [readonly]
 	pipe rs_pointcloud pc_stream [readonly]
 	
-	
 end 

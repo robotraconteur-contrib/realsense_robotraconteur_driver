@@ -24,10 +24,9 @@ def deform_pc(RR_pc):
 	return RR_pc.points.view((float, len(RR_pc.points.dtype.names)))
 
 current_frame=None
-image_type='depth'
 #This function is called when a new pipe packet arrives
 def new_frame(pipe_ep):
-	global current_frame, image_type
+	global current_frame
 
 	#Loop to get the newest frame
 	while (pipe_ep.Available > 0):
@@ -35,25 +34,22 @@ def new_frame(pipe_ep):
 		
 		image=pipe_ep.ReceivePacket()
 		#Convert the packet to an image and set the global variable
-		if image_type=='color':
-			current_frame=ImageToMat(image)
-		else:
-			current_frame=ImageToMat(image.depth_image)
+		current_frame=ImageToMat(image)
 
 		return
 
 def main():
 
-	url='rr+tcp://localhost:25415?service=RS_Service'
+	url='rr+tcp://localhost:25415?service=Multi_Cam_Service'
 	if (len(sys.argv)>=2):
 		url=sys.argv[1]
 
 	#Startup, connect, and pull out the camera from the objref    
-	rs_obj=RRN.ConnectService(url)
+	Multi_Cam_obj=RRN.ConnectService(url)
 
 	#Connect the pipe FrameStream to get the PipeEndpoint p
-	p=rs_obj.depth_image_stream.Connect(-1)
-	# p=rs_obj.depth_image_stream.Connect(-1)
+	cam=Multi_Cam_obj.get_cameras(1)
+	p=cam.frame_stream.Connect(-1)
 
 	#Set the callback for when a new pipe packet is received to the
 	#new_frame function
@@ -61,8 +57,10 @@ def main():
 
 
 	try:
-		rs_obj.StartStreaming()
-	except: pass
+		cam.start_streaming()
+	except: 
+		traceback.print_exc()
+		pass
 
 	cv2.namedWindow("Image")
 
@@ -71,13 +69,14 @@ def main():
 		#This is not ideal but good enough for demonstration
 
 		if (not current_frame is None):
+
 			cv2.imshow("Image",current_frame)
 		if cv2.waitKey(50)!=-1:
 			break
 	cv2.destroyAllWindows()
 
 	p.Close()
-	rs_obj.StopStreaming()
+	cam.stop_streaming()
 
 
 
