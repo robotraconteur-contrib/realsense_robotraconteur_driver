@@ -2,7 +2,7 @@ import RobotRaconteur as RR
 RRN=RR.RobotRaconteurNode.s
 import RobotRaconteurCompanion as RRC
 import numpy as np
-import traceback, os, cv2, time, threading, argparse
+import traceback, os, cv2, time, threading, argparse, yaml
 import pyrealsense2 as rs
 from RobotRaconteurCompanion.Util.InfoFileLoader import InfoFileLoader
 from RobotRaconteurCompanion.Util.DateTimeUtil import DateTimeUtil
@@ -212,7 +212,7 @@ class RSImpl(object):
 def main():
 	with RR.ServerNodeSetup("RS_Node", 25415) as node_setup:
 		parser = argparse.ArgumentParser(description="Realsense Driver for Robot Raconteur")
-		parser.add_argument("--realsense-info-file", type=argparse.FileType('r'),default="realsense.yaml",help="Realsense info file (required)")
+		parser.add_argument("--realsense-info-file", type=argparse.FileType('r'),default="realsense.yml",help="Realsense info file (required)")
 		args, _ = parser.parse_known_args()
 
 		#Register Service types
@@ -221,19 +221,22 @@ def main():
 		RS_obj=RSImpl()
 
 		with args.realsense_info_file:
-			realsense_info_text = args.realsense_info_file.read()
+			realsense_info_yml = yaml.safe_load(args.realsense_info_file)
 		info_loader = InfoFileLoader(RRN)
-		# realsense_info, camera_ident_fd = info_loader.LoadInfoFileFromString(tool_info_text, "com.robotraconteur.robotics.tool.ToolInfo", "tool")
-		# attributes_util = AttributesUtil(RRN)
-		# tool_attributes = attributes_util.GetDefaultServiceAttributesFromDeviceInfo(tool_info.device_info)
-		# gripper_inst=create_gripper(tool_info)
-		# service_ctx = RRN.RegisterService("tool","com.robotraconteur.robotics.tool.Tool",gripper_inst)
-		# service_ctx.SetServiceAttributes(tool_attributes)
-
+		multicam_info, multicam_ident_fd = info_loader.LoadInfoFileFromString(yaml.safe_dump(realsense_info_yml["multicamera"]), "com.robotraconteur.imaging.camerainfo.MultiCameraInfo", "device")
+		point_cloud_info, multicam_ident_fd = info_loader.LoadInfoFileFromString(yaml.safe_dump(realsense_info_yml["point_cloud"]), "com.robotraconteur.pointcloud.sensor.PointCloudSensorInfo", "device")
+		attributes_util = AttributesUtil(RRN)
+		multicam_attributes = attributes_util.GetDefaultServiceAttributesFromDeviceInfo(multicam_info.device_info)
+		service_ctx1 = RRN.RegisterService("Multi_Cam_Service","com.robotraconteur.imaging.MultiCamera",RS_obj.Multi_Cam_obj)
+		service_ctx1.SetServiceAttributes(multicam_attributes)
+		point_cloud_attributes = attributes_util.GetDefaultServiceAttributesFromDeviceInfo(point_cloud_info.device_info)
+		service_ctx2 = RRN.RegisterService("PC_Service","com.robotraconteur.pointcloud.sensor.PointCloudSensor",RS_obj.PC_Sensor)
+		service_ctx2.SetServiceAttributes(point_cloud_attributes)
+		
 		RS_obj.start_streaming()
 
-		RRN.RegisterService("Multi_Cam_Service","com.robotraconteur.imaging.MultiCamera",RS_obj.Multi_Cam_obj)
-		RRN.RegisterService("PC_Service","com.robotraconteur.pointcloud.sensor.PointCloudSensor",RS_obj.PC_Sensor)
+		
+		
 
 		input("Press enter to quit")
 
