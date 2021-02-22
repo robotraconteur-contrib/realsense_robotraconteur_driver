@@ -39,7 +39,7 @@ def new_frame(pipe_ep):
 def main():
 	#Accept the names of the webcams and the nodename from command line
 	parser = argparse.ArgumentParser(description="RR plug and play client")
-	parser.add_argument("--type",type=str,help="type of image")
+	parser.add_argument("--type",type=str,default='rgb',help="type of image")
 	args, _ = parser.parse_known_args()
 
 	cam_dict={'rgb':0,'depth':1}

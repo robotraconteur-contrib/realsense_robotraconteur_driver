@@ -41,6 +41,7 @@ class Multi_Cam(object):
 		self.RGB_Cam_obj=RGB_Cam()
 		self.Depth_Cam_obj=Depth_Cam()
 		self.cameras=[self.RGB_Cam_obj,self.Depth_Cam_obj]
+		self.camera_names=['RGB','Depth']
 		self._image_consts = RRN.GetConstants('com.robotraconteur.image')
 		self._image_type = RRN.GetStructureType('com.robotraconteur.image.Image')
 		self._depth_image_type = RRN.GetStructureType('com.robotraconteur.image.DepthImage')
