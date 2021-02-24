@@ -102,8 +102,9 @@ class PC_Sensor(object):
 		return PCSD
 
 class RSImpl(object):
-	#Issue: Officially we currently only support 640x480/1024x768 for Depth and 1920x1080/1280x720 for Color.
-	def __init__(self, width=640, height=480, fps=30, camera_info=None):
+	#Resolution: 1920x1080, 1280x720 or 640x480 for RGB, 1280x720 or 640x480 for depth
+	#FPS: 60/30/15/6
+	def __init__(self, rgb_res=(1920,1080), depth_res=(1280,720), fps=15):
 		#initialize RR obj
 		self.Multi_Cam_obj=Multi_Cam()
 		self.PC_Sensor=PC_Sensor()
@@ -114,8 +115,8 @@ class RSImpl(object):
 		#Create a config and configure the pipeline to stream
 		#  different resolutions of color and depth streams
 		self.config = rs.config()
-		self.config.enable_stream(rs.stream.depth, width, height, rs.format.z16, fps)
-		self.config.enable_stream(rs.stream.color, width, height, rs.format.bgr8, fps)
+		self.config.enable_stream(rs.stream.depth, depth_res[0], depth_res[1], rs.format.z16, fps)
+		self.config.enable_stream(rs.stream.color, rgb_res[0], rgb_res[1], rs.format.bgr8, fps)
 
 		# Start streaming
 		self.profile = self.pipeline.start(self.config)
@@ -213,13 +214,16 @@ class RSImpl(object):
 def main():
 	with RR.ServerNodeSetup("RS_Node", 25415) as node_setup:
 		parser = argparse.ArgumentParser(description="Realsense Driver for Robot Raconteur")
-		parser.add_argument("--realsense-info-file", type=argparse.FileType('r'),default="realsense.yml",help="Realsense info file (required)")
+		parser.add_argument("--realsense-info-file", type=argparse.FileType('r'),default="realsense.yml",help="Realsense info file")
+		parser.add_argument("--rgb-resolution", nargs='+',type=int,default=[640, 480],help="RGB camera resolution, up to 1920x1080")
+		parser.add_argument("--depth-resolution", nargs='+',type=int,default=[640, 480],help="Depth camera resolution, up to 1280x720")
+		parser.add_argument("--fps",type=int,default=6,help="fps, up to 60, subject to resolution")
 		args, _ = parser.parse_known_args()
 
 		#Register Service types
 		RRC. RegisterStdRobDefServiceTypes(RRN)
 		#create object
-		RS_obj=RSImpl()
+		RS_obj=RSImpl(rgb_res=tuple(args.rgb_resolution),depth_res=tuple(args.depth_resolution),fps=args.fps)
 
 		with args.realsense_info_file:
 			realsense_info_yml = yaml.safe_load(args.realsense_info_file)
