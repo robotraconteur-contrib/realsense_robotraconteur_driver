@@ -20,9 +20,7 @@ def deform_pc(RR_pc):
 def main():
 	global pointcloud, graph, title
 	url='rr+tcp://localhost:25415?service=PC_Service'
-	if (len(sys.argv)>=2):
-		url=sys.argv[1]
-
+	
 	#Startup, connect, and pull out the camera from the objref    
 	PC_obj=RRN.ConnectService(url)
 	pointcloud=deform_pc(PC_obj.capture_point_cloud())
