@@ -4,6 +4,8 @@
 * python3.7
 * Robot Raconteur (Windows: `python3.7 -m pip install robotraconteur`,Ubuntu: https://github.com/robotraconteur/robotraconteur/wiki/Build-Python-3.7-on-Ubuntu)
 * Robot Raconteur Companion (`python3.7 -m pip install RobotRaconteurCompanion`)
+* OpenCV (`python3.7 -m pip install python-opencv`)
+* Matplotlib (`python3.7 -m pip install matplotlib`)
 * pyrealsense2 (`python3.7 -m pip install pyrealsense2`)
 
 ## Standard Service Types:
