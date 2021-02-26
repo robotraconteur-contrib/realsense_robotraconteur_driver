@@ -184,38 +184,39 @@ class RSImpl(object):
 		return self.Multi_Cam_obj._cv_mat_to_image(depth_colormap)
 
 	def capture_point_cloud(self):
-		# Get frameset of color and depth
-		frames = self.pipeline.wait_for_frames()
-		# frames.get_depth_frame() is a 640x360 depth image
+		with self._capture_lock:
+			# Get frameset of color and depth
+			frames = self.pipeline.wait_for_frames()
+			# frames.get_depth_frame() is a 640x360 depth image
 
-		# Align the depth frame to color frame
-		aligned_frames = self.align.process(frames)
+			# Align the depth frame to color frame
+			aligned_frames = self.align.process(frames)
 
-		# Get aligned frames
-		aligned_depth_frame = aligned_frames.get_depth_frame() # aligned_depth_frame is a 640x480 depth image
-		color_frame = aligned_frames.get_color_frame()
+			# Get aligned frames
+			aligned_depth_frame = aligned_frames.get_depth_frame() # aligned_depth_frame is a 640x480 depth image
+			color_frame = aligned_frames.get_color_frame()
 
-		# Validate that both frames are valid
-		if not aligned_depth_frame or not color_frame:
-			raise ('something wrong here')
+			# Validate that both frames are valid
+			if not aligned_depth_frame or not color_frame:
+				raise ('something wrong here')
 
-		###pointcloud part
-		depth_frame = self.decimate.process(aligned_depth_frame)
+			###pointcloud part
+			depth_frame = self.decimate.process(aligned_depth_frame)
 
-		# Grab new intrinsics (may be changed by decimation)
-		depth_intrinsics = rs.video_stream_profile(
-			depth_frame.profile).get_intrinsics()
-		w, h = depth_intrinsics.width, depth_intrinsics.height
+			# Grab new intrinsics (may be changed by decimation)
+			depth_intrinsics = rs.video_stream_profile(
+				depth_frame.profile).get_intrinsics()
+			w, h = depth_intrinsics.width, depth_intrinsics.height
 
-		points = self.pc.calculate(depth_frame)
-		self.pc.map_to(color_frame)
+			points = self.pc.calculate(depth_frame)
+			self.pc.map_to(color_frame)
 
-		# Pointcloud data to arrays
-		v, t = points.get_vertices(), points.get_texture_coordinates()
-		verts = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
-		texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  # uv
+			# Pointcloud data to arrays
+			v, t = points.get_vertices(), points.get_texture_coordinates()
+			verts = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
+			texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  # uv
 
-		return self.PC_Sensor._pc_to_RRpc(verts,texcoords,w,h)
+			return self.PC_Sensor._pc_to_RRpc(verts,texcoords,w,h)
 
 
 	def frame_threadfunc(self):
