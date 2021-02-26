@@ -11,9 +11,10 @@ from RobotRaconteurCompanion.Util.AttributesUtil import AttributesUtil
 
 
 class RGB_Cam(object):
-	def __init__(self):
+	def __init__(self,RS_obj):
 		self._streaming = False
 		self._capture_lock = threading.Lock()
+		self.RS_obj=RS_obj
 
 	def start_streaming(self):
 		self._streaming=True
@@ -21,12 +22,14 @@ class RGB_Cam(object):
 
 	def stop_streaming(self):
 		self._streaming=False
+	def capture_frame(self):
+		return self.RS_obj.capture_rgb_frame()
 
 class Depth_Cam(object):
-	def __init__(self):
+	def __init__(self,RS_obj):
 		self._streaming = False
 		self._capture_lock = threading.Lock()
-
+		self.RS_obj=RS_obj
 	def start_streaming(self):
 		self._streaming=True
 
@@ -34,12 +37,15 @@ class Depth_Cam(object):
 	def stop_streaming(self):
 		self._streaming=False
 
+	def capture_frame(self):
+		return self.RS_obj.capture_depth_frame()
+
 class Multi_Cam(object):
-	def __init__(self):
+	def __init__(self,RS_obj):
 		self._streaming = False
 		self._capture_lock = threading.Lock()
-		self.RGB_Cam_obj=RGB_Cam()
-		self.Depth_Cam_obj=Depth_Cam()
+		self.RGB_Cam_obj=RGB_Cam(RS_obj)
+		self.Depth_Cam_obj=Depth_Cam(RS_obj)
 		self.cameras=[self.RGB_Cam_obj,self.Depth_Cam_obj]
 		self.camera_names=['RGB','Depth']
 		self._image_consts = RRN.GetConstants('com.robotraconteur.image')
@@ -79,11 +85,12 @@ class Multi_Cam(object):
 
 
 class PC_Sensor(object):
-	def __init__(self):
+	def __init__(self,RS_obj):
 		self.active=True
 		self._point_type = RRN.GetNamedArrayDType("com.robotraconteur.geometryf.Point")
 		self._pointcloud_type = RRN.GetStructureType('com.robotraconteur.pointcloud.PointCloudf')
 		self._pointcloudsensordata_type=RRN.GetStructureType('com.robotraconteur.pointcloud.sensor.PointCloudSensorData')
+		self.RS_obj=RS_obj
 
 	def _pc_to_RRpc(self,verts,texcoords,w,h):
 		RRpc=self._pointcloud_type()
@@ -101,13 +108,16 @@ class PC_Sensor(object):
 		PCSD.point_cloud=RRpc
 		return PCSD
 
+	def capture_point_cloud(self):
+		return self.RS_obj.capture_point_cloud()
+
 class RSImpl(object):
 	#Resolution: 1920x1080, 1280x720 or 640x480 for RGB, 1280x720 or 640x480 for depth
 	#FPS: 60/30/15/6
 	def __init__(self, rgb_res=(1920,1080), depth_res=(1280,720), fps=15):
 		#initialize RR obj
-		self.Multi_Cam_obj=Multi_Cam()
-		self.PC_Sensor=PC_Sensor()
+		self.Multi_Cam_obj=Multi_Cam(self)
+		self.PC_Sensor=PC_Sensor(self)
 
 		# Create a pipeline
 		self.pipeline = rs.pipeline()
@@ -144,7 +154,69 @@ class RSImpl(object):
 
 		self._streaming = False
 
-	
+	def capture_rgb_frame(self):
+		with self._capture_lock:
+			# Get frameset of color and depth
+			frames = self.pipeline.wait_for_frames()
+			# frames.get_depth_frame() is a 640x360 depth image
+
+			# Align the depth frame to color frame
+			aligned_frames = self.align.process(frames)
+
+			# Get color frame
+			color_frame = aligned_frames.get_color_frame()
+			color_image = np.asanyarray(color_frame.get_data(),dtype=np.uint8)
+		return self.Multi_Cam_obj._cv_mat_to_image(color_image)
+
+	def capture_depth_frame(self):
+		with self._capture_lock:
+			# Get frameset of color and depth
+			frames = self.pipeline.wait_for_frames()
+			# frames.get_depth_frame() is a 640x360 depth image
+
+			# Align the depth frame to color frame
+			aligned_frames = self.align.process(frames)
+
+			# Get color frame
+			aligned_depth_frame = aligned_frames.get_depth_frame()
+			depth_image = np.asanyarray(aligned_depth_frame.get_data())
+			depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
+		return self.Multi_Cam_obj._cv_mat_to_image(depth_colormap)
+
+	def capture_point_cloud(self):
+		# Get frameset of color and depth
+		frames = self.pipeline.wait_for_frames()
+		# frames.get_depth_frame() is a 640x360 depth image
+
+		# Align the depth frame to color frame
+		aligned_frames = self.align.process(frames)
+
+		# Get aligned frames
+		aligned_depth_frame = aligned_frames.get_depth_frame() # aligned_depth_frame is a 640x480 depth image
+		color_frame = aligned_frames.get_color_frame()
+
+		# Validate that both frames are valid
+		if not aligned_depth_frame or not color_frame:
+			raise ('something wrong here')
+
+		###pointcloud part
+		depth_frame = self.decimate.process(aligned_depth_frame)
+
+		# Grab new intrinsics (may be changed by decimation)
+		depth_intrinsics = rs.video_stream_profile(
+			depth_frame.profile).get_intrinsics()
+		w, h = depth_intrinsics.width, depth_intrinsics.height
+
+		points = self.pc.calculate(depth_frame)
+		self.pc.map_to(color_frame)
+
+		# Pointcloud data to arrays
+		v, t = points.get_vertices(), points.get_texture_coordinates()
+		verts = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
+		texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  # uv
+
+		return self.PC_Sensor._pc_to_RRpc(verts,texcoords,w,h)
+
 
 	def frame_threadfunc(self):
 		while(self._streaming):
@@ -192,7 +264,8 @@ class RSImpl(object):
 					texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  # uv
 
 					PCSD=self.PC_Sensor._RRpc_to_PCSD(self.PC_Sensor._pc_to_RRpc(verts,texcoords,w,h))
-					self.PC_Sensor.point_cloud_sensor_data.SendPacket(PCSD)
+					if self.PC_Sensor.active:
+						self.PC_Sensor.point_cloud_sensor_data.SendPacket(PCSD)
 				except:
 					traceback.print_exc()
 
@@ -238,14 +311,14 @@ def main():
 		service_ctx2 = RRN.RegisterService("PC_Service","com.robotraconteur.pointcloud.sensor.PointCloudSensor",RS_obj.PC_Sensor)
 		service_ctx2.SetServiceAttributes(point_cloud_attributes)
 		
-		RS_obj.start_streaming()
+		# RS_obj.start_streaming()
 
 		
 		
 
 		input("Press enter to quit")
 
-		RS_obj.stop_streaming()
+		# RS_obj.stop_streaming()
 		RS_obj.pipeline.stop()
 
 

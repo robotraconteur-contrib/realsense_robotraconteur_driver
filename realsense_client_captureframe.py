@@ -16,21 +16,6 @@ def ImageToMat(image):
 	frame2=image.data.reshape([image.image_info.height, image.image_info.width, int(len(image.data)/(image.image_info.height*image.image_info.width))], order='C')
 	return frame2
 
-current_frame=None
-#This function is called when a new pipe packet arrives
-def new_frame(pipe_ep):
-	global current_frame
-
-	#Loop to get the newest frame
-	while (pipe_ep.Available > 0):
-		#Receive the packet
-		
-		image=pipe_ep.ReceivePacket()
-		#Convert the packet to an image and set the global variable
-		current_frame=ImageToMat(image)
-
-		return
-
 def main():
 	#Accept the names of the webcams and the nodename from command line
 	parser = argparse.ArgumentParser(description="RR plug and play client")
@@ -46,33 +31,14 @@ def main():
 
 	#Connect the pipe FrameStream to get the PipeEndpoint p
 	cam=Multi_Cam_obj.get_cameras(cam_dict[args.type])
-	p=cam.frame_stream.Connect(-1)
-
-	#Set the callback for when a new pipe packet is received to the
-	#new_frame function
-	p.PacketReceivedEvent+=new_frame
-
-
-	try:
-		cam.start_streaming()
-	except: 
-		traceback.print_exc()
-		pass
+	current_frame=ImageToMat(cam.capture_frame())
 
 	cv2.namedWindow("Image")
 
-	while True:
-		#Just loop resetting the frame
-		#This is not ideal but good enough for demonstration
+	cv2.imshow("Image",current_frame)
+	if cv2.waitKey(50)!=-1:
+		cv2.destroyAllWindows()
 
-		if (not current_frame is None):
-
-			cv2.imshow("Image",current_frame)
-		if cv2.waitKey(50)!=-1:
-			break
-	cv2.destroyAllWindows()
-
-	p.Close()
 	cam.stop_streaming()
 
 
