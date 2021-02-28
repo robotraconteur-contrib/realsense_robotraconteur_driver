@@ -285,7 +285,7 @@ class RSImpl(object):
 					texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  # uv
 
 					PCSD=self.PC_Sensor._RRpc_to_PCSD(self.PC_Sensor._pc_to_RRpc(verts,texcoords,w,h))
-					if self.PC_Sensor.active:
+					if self.PC_Sensor._active:
 						self.PC_Sensor.point_cloud_sensor_data.SendPacket(PCSD)
 				except:
 					traceback.print_exc()
@@ -350,14 +350,18 @@ def main():
 		service_ctx2 = RRN.RegisterService("PC_Service","com.robotraconteur.pointcloud.sensor.PointCloudSensor",RS_obj.PC_Sensor)
 		service_ctx2.SetServiceAttributes(point_cloud_attributes)
 		
-		# RS_obj.start_streaming()
-
-		
-		
+		# RS_obj.Multi_Cam_obj.cameras[0]._streaming=True
+		# RS_obj.Multi_Cam_obj.cameras[1]._streaming=True
+		# RS_obj.PC_Sensor._active=True
+		# RS_obj.update_streaming()
 
 		input("Press enter to quit")
 
-		# RS_obj.stop_streaming()
+		# RS_obj.Multi_Cam_obj.cameras[0]._streaming=False
+		# RS_obj.Multi_Cam_obj.cameras[1]._streaming=False
+		# RS_obj.PC_Sensor._active=False
+		# RS_obj.update_streaming()
+
 		RS_obj.pipeline.stop()
 
 
