@@ -5,7 +5,7 @@
 
 from RobotRaconteur.Client import *
 
-import cv2, sys, traceback, argparse
+import cv2, sys, traceback, argparse, time
 import numpy as np
 import traceback
 
@@ -25,10 +25,12 @@ def ImageToMat(image):
 
 image_consts=None
 current_frame=None
+now=time.time()
 #This function is called when a new pipe packet arrives
 def new_frame(pipe_ep):
-	global current_frame
-
+	global current_frame, now
+	# print('fps= ', 1/(time.time()-now))
+	now=time.time()
 	#Loop to get the newest frame
 	while (pipe_ep.Available > 0):
 		#Receive the packet

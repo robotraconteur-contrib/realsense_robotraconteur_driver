@@ -226,7 +226,6 @@ class RSImpl(object):
 		while(self._streaming):
 			with self._capture_lock:
 				try:
-					now=time.time()
 					# Get frameset of color and depth
 					frames = self.pipeline.wait_for_frames()
 					# frames.get_depth_frame() is a 640x360 depth image
@@ -282,7 +281,6 @@ class RSImpl(object):
 					PCSD=self.PC_Sensor._RRpc_to_PCSD(self.PC_Sensor._pc_to_RRpc(verts,texcoords,w,h))
 					if self.PC_Sensor._active:
 						self.PC_Sensor.point_cloud_sensor_data.SendPacket(PCSD)
-					print(time.time()-now)
 				except:
 					traceback.print_exc()
 
