@@ -13,7 +13,7 @@ import numpy as np
 #and convert it to an OpenCV array
 def ImageToMat(image):
 
-	if image.image_info.encoding == image_consts["ImageEncoding"]["rgb8"]:
+	if image.image_info.encoding == image_consts["ImageEncoding"]["bgr888"]:
 		frame2=image.data.reshape([image.image_info.height, image.image_info.width, int(len(image.data)/(image.image_info.height*image.image_info.width))], order='C')
 	elif image.image_info.encoding == image_consts["ImageEncoding"]["depth_u16"]:
 		depth_img =image.data.view(dtype=np.uint16).reshape([image.image_info.height, image.image_info.width], order='C')

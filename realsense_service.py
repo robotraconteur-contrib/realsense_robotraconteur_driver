@@ -54,7 +54,6 @@ class Multi_Cam(object):
 		self.camera_names=['RGB','Depth']
 		self._image_consts = RRN.GetConstants('com.robotraconteur.image')
 		self._image_type = RRN.GetStructureType('com.robotraconteur.image.Image')
-		self._depth_image_type = RRN.GetStructureType('com.robotraconteur.image.DepthImage')
 		self._image_info_type = RRN.GetStructureType('com.robotraconteur.image.ImageInfo')
 		
 	def get_cameras(self,ind):
@@ -77,7 +76,7 @@ class Multi_Cam(object):
 			image_info.encoding = self._image_consts["ImageEncoding"]["mono8"]
 		else:
 			image_info.step = mat.shape[1]*3
-			image_info.encoding = self._image_consts["ImageEncoding"]["rgb8"]
+			image_info.encoding = self._image_consts["ImageEncoding"]["bgr888"]
 
 		image = self._image_type()
 		image.image_info = image_info
@@ -94,8 +93,8 @@ class PC_Sensor(object):
 
 	def _pc_to_RRpc(self,verts,texcoords,w,h):
 		RRpc=self._pointcloud_type()
-		RRpc.width=w
-		RRpc.height=h
+		#RRpc.width=w
+		#RRpc.height=h
 		RRpc.points=np.zeros((len(verts)),dtype=self._point_type)
 
 		for i in range(len(verts)):
