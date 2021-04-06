@@ -96,11 +96,7 @@ class PC_Sensor(object):
 		#RRpc.width=w
 		#RRpc.height=h
 		RRpc.points=np.zeros((len(verts)),dtype=self._point_type)
-
-		for i in range(len(verts)):
-			RRpc.points[i]['x']=verts[i][0]
-			RRpc.points[i]['y']=verts[i][1]
-			RRpc.points[i]['z']=verts[i][2]
+		RRpc.points=RRN.ArrayToNamedArray(verts,named_array_dt=self._point_type)
 		return RRpc
 	def _RRpc_to_PCSD(self,RRpc):
 		PCSD=self._pointcloudsensordata_type()
@@ -166,7 +162,6 @@ class RSImpl(object):
 		with self._capture_lock:
 			# Get frameset of color and depth
 			frames = self.pipeline.wait_for_frames()
-			# frames.get_depth_frame() is a 640x360 depth image
 
 			# Align the depth frame to color frame
 			aligned_frames = self.align.process(frames)
@@ -180,7 +175,6 @@ class RSImpl(object):
 		with self._capture_lock:
 			# Get frameset of color and depth
 			frames = self.pipeline.wait_for_frames()
-			# frames.get_depth_frame() is a 640x360 depth image
 
 			# Align the depth frame to color frame
 			aligned_frames = self.align.process(frames)
@@ -284,24 +278,10 @@ class RSImpl(object):
 					texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  # uv
 
 					PCSD=self.PC_Sensor._RRpc_to_PCSD(self.PC_Sensor._pc_to_RRpc(verts,texcoords,w,h))
-					if self.PC_Sensor.active:
+					if self.PC_Sensor._active:
 						self.PC_Sensor.point_cloud_sensor_data.SendPacket(PCSD)
 				except:
 					traceback.print_exc()
-
-
-
-	"""def start_streaming(self):
-		if (self._streaming):
-			raise RR.InvalidOperationException("Already streaming")
-		self._streaming=True
-		t=threading.Thread(target=self.frame_threadfunc)
-		t.start()
-
-	def stop_streaming(self):
-		if (not self._streaming):
-			raise RR.InvalidOperationException("Not streaming")
-		self._streaming=False"""
 
 	def update_streaming(self):
 		
@@ -328,7 +308,7 @@ def main():
 		parser.add_argument("--realsense-info-file", type=argparse.FileType('r'),default="realsense.yml",help="Realsense info file")
 		parser.add_argument("--rgb-resolution", nargs='+',type=int,default=[640, 480],help="RGB camera resolution, up to 1920x1080")
 		parser.add_argument("--depth-resolution", nargs='+',type=int,default=[640, 480],help="Depth camera resolution, up to 1280x720")
-		parser.add_argument("--fps",type=int,default=6,help="fps, up to 60, subject to resolution")
+		parser.add_argument("--fps",type=int,default=60,help="fps, up to 60, subject to resolution")
 		args, _ = parser.parse_known_args()
 
 		#Register Service types
@@ -349,14 +329,18 @@ def main():
 		service_ctx2 = RRN.RegisterService("PC_Service","com.robotraconteur.pointcloud.sensor.PointCloudSensor",RS_obj.PC_Sensor)
 		service_ctx2.SetServiceAttributes(point_cloud_attributes)
 		
-		# RS_obj.start_streaming()
-
-		
-		
+		# RS_obj.Multi_Cam_obj.cameras[0]._streaming=True
+		# RS_obj.Multi_Cam_obj.cameras[1]._streaming=True
+		# RS_obj.PC_Sensor._active=True
+		# RS_obj.update_streaming()
 
 		input("Press enter to quit")
 
-		# RS_obj.stop_streaming()
+		# RS_obj.Multi_Cam_obj.cameras[0]._streaming=False
+		# RS_obj.Multi_Cam_obj.cameras[1]._streaming=False
+		# RS_obj.PC_Sensor._active=False
+		# RS_obj.update_streaming()
+
 		RS_obj.pipeline.stop()
 
 

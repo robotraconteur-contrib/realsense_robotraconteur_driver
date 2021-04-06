@@ -3,12 +3,18 @@
 **WARNING: THIS DRIVER IS A WORK IN PROGRESS.**
 
 ## Prerequisites:
-* python3.7
-* Robot Raconteur (Windows: `python3.7 -m pip install robotraconteur`,Ubuntu: https://github.com/robotraconteur/robotraconteur/wiki/Build-Python-3.7-on-Ubuntu)
-* Robot Raconteur Companion (`python3.7 -m pip install RobotRaconteurCompanion`)
-* OpenCV (`python3.7 -m pip install python-opencv`)
-* Matplotlib (`python3.7 -m pip install matplotlib`)
-* pyrealsense2 (`python3.7 -m pip install pyrealsense2`)
+* python3: python3.7 for Windows, python 3.8 for Ubuntu (python3 refers 3.7 or 3.8 according to your system settings)
+* Robot Raconteur (Windows: `python3 -m pip install robotraconteur`,Ubuntu:
+ ```
+sudo add-apt-repository ppa:robotraconteur/ppa
+sudo apt-get update
+sudo apt-get install python3-robotraconteur
+```
+
+* Robot Raconteur Companion (`python3 -m pip install RobotRaconteurCompanion`)
+* OpenCV (`python3 -m pip install python-opencv`)
+* Matplotlib (`python3 -m pip install matplotlib`)
+* pyrealsense2 (`python3 -m pip install pyrealsense2`)
 
 ## Standard Service Types:
 * `Multi_Cam_Service`:
@@ -18,7 +24,7 @@ RGB Image and Depth Image
 Point Cloud Sensor
 ([com.robotraconteur.pointcloud.sensor.PointCloudSensor](https://github.com/robotraconteur/robotraconteur_standard_robdef/blob/master/group1/com.robotraconteur.pointcloud.sensor.robdef#L47))
 ## Start RR Service
-`python3.7 realsense_service.py`
+`python3 realsense_service.py`
 
 
 ## RR Client Example
