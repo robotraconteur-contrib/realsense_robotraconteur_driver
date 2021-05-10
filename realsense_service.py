@@ -293,12 +293,14 @@ class RSImpl(object):
 		if self.PC_Sensor._active:
 			need_stream = True
 
-		if need_stream and not self._streaming:
-			self._streaming = True
-			t=threading.Thread(target=self.frame_threadfunc)
-			t.start()
+		if need_stream: 
+			if not self._streaming:
+				self._streaming = True
+				t=threading.Thread(target=self.frame_threadfunc)
+				t.start()
 		else:
-			self._streaming=False
+			self._streaming = False
+
 
 
 
