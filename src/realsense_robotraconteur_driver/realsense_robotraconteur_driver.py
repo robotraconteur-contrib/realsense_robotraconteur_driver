@@ -307,7 +307,7 @@ class RSImpl(object):
 def main():
 	with RR.ServerNodeSetup("RS_Node", 25415) as node_setup:
 		parser = argparse.ArgumentParser(description="Realsense Driver for Robot Raconteur")
-		parser.add_argument("--realsense-info-file", type=argparse.FileType('r'),default="realsense.yml",help="Realsense info file")
+		parser.add_argument("--realsense-info-file", type=argparse.FileType('r'),required=True,help="Realsense info file")
 		parser.add_argument("--rgb-resolution", nargs='+',type=int,default=[640, 480],help="RGB camera resolution, up to 1920x1080")
 		parser.add_argument("--depth-resolution", nargs='+',type=int,default=[640, 480],help="Depth camera resolution, up to 1280x720")
 		parser.add_argument("--fps",type=int,default=60,help="fps, up to 60, subject to resolution")
