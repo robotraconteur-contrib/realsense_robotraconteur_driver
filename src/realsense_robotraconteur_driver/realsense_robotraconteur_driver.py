@@ -8,6 +8,7 @@ from RobotRaconteurCompanion.Util.InfoFileLoader import InfoFileLoader
 from RobotRaconteurCompanion.Util.DateTimeUtil import DateTimeUtil
 from RobotRaconteurCompanion.Util.SensorDataUtil import SensorDataUtil
 from RobotRaconteurCompanion.Util.AttributesUtil import AttributesUtil
+import drekar_launch_process
 
 
 class RGB_Cam(object):
@@ -336,7 +337,9 @@ def main():
 		# RS_obj.PC_Sensor._active=True
 		# RS_obj.update_streaming()
 
-		input("Press enter to quit")
+		print("Press Ctrl-C to quit")
+
+		drekar_launch_process.wait_exit()
 
 		# RS_obj.Multi_Cam_obj.cameras[0]._streaming=False
 		# RS_obj.Multi_Cam_obj.cameras[1]._streaming=False
