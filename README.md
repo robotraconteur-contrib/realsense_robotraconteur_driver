@@ -34,4 +34,4 @@ Point Cloud Sensor
 `python realsense_client_image.py --type=depth`
 * Pointcloud View
 `python realsense_client_pointcloud.py`
-![Pointcloud_view](pointcloud_view.png)
+![Pointcloud_view](docs/figures/pointcloud_view.png)
