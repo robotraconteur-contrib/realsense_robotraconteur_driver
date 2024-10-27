@@ -8,6 +8,7 @@ from RobotRaconteurCompanion.Util.InfoFileLoader import InfoFileLoader
 from RobotRaconteurCompanion.Util.DateTimeUtil import DateTimeUtil
 from RobotRaconteurCompanion.Util.SensorDataUtil import SensorDataUtil
 from RobotRaconteurCompanion.Util.AttributesUtil import AttributesUtil
+import drekar_launch_process
 
 
 class RGB_Cam(object):
@@ -307,7 +308,7 @@ class RSImpl(object):
 def main():
 	with RR.ServerNodeSetup("RS_Node", 25415) as node_setup:
 		parser = argparse.ArgumentParser(description="Realsense Driver for Robot Raconteur")
-		parser.add_argument("--realsense-info-file", type=argparse.FileType('r'),default="realsense.yml",help="Realsense info file")
+		parser.add_argument("--realsense-info-file", type=argparse.FileType('r'),required=True,help="Realsense info file")
 		parser.add_argument("--rgb-resolution", nargs='+',type=int,default=[640, 480],help="RGB camera resolution, up to 1920x1080")
 		parser.add_argument("--depth-resolution", nargs='+',type=int,default=[640, 480],help="Depth camera resolution, up to 1280x720")
 		parser.add_argument("--fps",type=int,default=60,help="fps, up to 60, subject to resolution")
@@ -336,7 +337,9 @@ def main():
 		# RS_obj.PC_Sensor._active=True
 		# RS_obj.update_streaming()
 
-		input("Press enter to quit")
+		print("Press Ctrl-C to quit")
+
+		drekar_launch_process.wait_exit()
 
 		# RS_obj.Multi_Cam_obj.cameras[0]._streaming=False
 		# RS_obj.Multi_Cam_obj.cameras[1]._streaming=False

@@ -14,9 +14,6 @@ import matplotlib.animation as animation
 
 
 
-def deform_pc(RR_pc):
-	return RR_pc.points.view((np.float32, len(RR_pc.points.dtype.names)))
-
 pointcloud=None
 graph=None
 title=None
@@ -31,7 +28,7 @@ def new_frame(pipe_ep):
 		sensor_stream=pipe_ep.ReceivePacket()
 
 		try:
-			pointcloud=deform_pc(sensor_stream.point_cloud)
+			pointcloud = RRN.NamedArrayToArray(sensor_stream.points)
 		except:
 			traceback.print_exc()
 		return
@@ -55,14 +52,13 @@ def main():
 
 	
 	fig = plt.figure()
-	ax = p3.Axes3D(fig)
+	ax = fig.add_subplot(projection="3d")
 	title = ax.set_title('3D Test')
 	time.sleep(2)
 	graph = ax.scatter(pointcloud[:,0], pointcloud[:,1], pointcloud[:,2])
 	plt.show()
 
 	p.Close()
-
 
 
 if __name__ == '__main__':
